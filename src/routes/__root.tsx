@@ -109,7 +109,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 
 function RootShell({ children }: { children: ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="pl">
       <head>
         <HeadContent />
       </head>
@@ -126,8 +126,25 @@ function RootComponent() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
-      <Outlet />
+      <div className="min-h-screen bg-black flex justify-center">
+        <div className="w-full max-w-[390px] min-h-screen bg-background text-foreground font-sans selection:bg-accent/30 flex flex-col border-x border-border">
+          <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border px-6 py-4 flex justify-between items-end">
+            <div className="flex flex-col">
+              <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
+                System.Active
+              </span>
+              <h1 className="text-lg font-extrabold tracking-tighter">KINETIC_03</h1>
+            </div>
+            <div className="size-2 rounded-full bg-accent animate-pulse" />
+          </header>
+
+          {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
+          <Outlet />
+
+          <BottomNav />
+        </div>
+      </div>
     </QueryClientProvider>
   );
 }
+
