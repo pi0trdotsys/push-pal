@@ -49,7 +49,7 @@ export const TRAINING_PLANS: TrainingPlan[] = [
   },
 ];
 
-export const DEFAULT_PLAN = TRAINING_PLANS[1];
+export const DEFAULT_PLAN: TrainingPlan = TRAINING_PLANS[1]!;
 
 export const WEEK_PROGRESS = [
   { day: "MON", value: 40 },
