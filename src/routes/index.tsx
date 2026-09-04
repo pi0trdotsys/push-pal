@@ -27,6 +27,9 @@ function TodayPage() {
   const day = todayPlan(app);
   const rest = isRestDay(day);
   const total = dayVolume(day);
+  /** Szacunek: ~3 s na powtórzenie + 60 s przerwy między seriami. */
+  const estSeconds = total * 3 + Math.max(0, day.sets.length - 1) * 60;
+  const estMinutes = Math.max(1, Math.round(estSeconds / 60));
 
   return (
     <main className="flex-1 flex flex-col justify-between px-8 py-14">
@@ -52,7 +55,7 @@ function TodayPage() {
               {total}
             </span>
             <p className="text-[11px] tracking-[0.3em] uppercase text-muted-foreground">
-              {day.sets.length} serie · {day.sets.join(" / ")}
+              {day.sets.length} serie · {day.sets.join(" / ")} · ~{estMinutes} min
             </p>
           </>
         )}
