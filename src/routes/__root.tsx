@@ -97,7 +97,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
@@ -129,17 +129,7 @@ function RootComponent() {
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-black flex justify-center">
-        <div className="w-full max-w-[390px] min-h-screen bg-background text-foreground font-sans selection:bg-accent/30 flex flex-col border-x border-border">
-          <header className="sticky top-0 z-50 bg-background/80 backdrop-blur-md border-b border-border px-6 py-4 flex justify-between items-end">
-            <div className="flex flex-col">
-              <span className="font-mono text-[10px] tracking-[0.2em] text-muted-foreground uppercase">
-                System.Active
-              </span>
-              <h1 className="text-lg font-extrabold tracking-tighter">KINETIC_03</h1>
-            </div>
-            <div className="size-2 rounded-full bg-accent animate-pulse" />
-          </header>
-
+        <div className="w-full max-w-[420px] min-h-screen bg-background text-foreground font-sans flex flex-col">
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
 
