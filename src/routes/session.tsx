@@ -2,8 +2,12 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useEffect, useRef, useState } from "react";
 import { RepCounter } from "@/components/rep-counter";
 import { useRepSensor } from "@/hooks/use-rep-sensor";
+import { useNativeRepSensorSource } from "@/lib/native-sensor";
 import { dayVolume } from "@/lib/plan-30";
 import { pushSession, todayPlan, useAppState } from "@/lib/session-store";
+
+/** Przytrzymanie ekranu dłużej niż to (ms) przerywa sesję bez zapisu. */
+const LONG_PRESS_MS = 600;
 
 export const Route = createFileRoute("/session")({
   head: () => ({
@@ -29,13 +33,17 @@ function SessionPage() {
   const day = todayPlan(app);
   const target = dayVolume(day);
 
-  const sensor = useRepSensor({ threshold: app.threshold });
+  const source = useNativeRepSensorSource(app.sensorKind);
+  const sensor = useRepSensor({ kind: app.sensorKind, threshold: app.threshold, source });
   const [setIndex, setSetIndex] = useState(0);
   const [done, setDone] = useState(0);
   const [rest, setRest] = useState<number | null>(null);
   const [finished, setFinished] = useState(false);
   const [elapsed, setElapsed] = useState(0);
+  const [holding, setHolding] = useState(false);
   const base = useRef(0);
+  const pressTimer = useRef<number | null>(null);
+  const longPressFired = useRef(false);
 
   const setTarget = day.sets[setIndex] ?? 0;
   const inSet = sensor.reps - base.current;
@@ -89,6 +97,33 @@ function SessionPage() {
     navigate({ to: "/" });
   };
 
+  /** Długie przytrzymanie ekranu = przerwij sesję bez zapisu do historii. */
+  const abort = () => {
+    sensor.pause();
+    navigate({ to: "/" });
+  };
+
+  const handlePressStart = () => {
+    longPressFired.current = false;
+    setHolding(true);
+    pressTimer.current = window.setTimeout(() => {
+      longPressFired.current = true;
+      setHolding(false);
+      abort();
+    }, LONG_PRESS_MS);
+  };
+
+  const handlePressEnd = () => {
+    setHolding(false);
+    if (pressTimer.current !== null) {
+      window.clearTimeout(pressTimer.current);
+      pressTimer.current = null;
+    }
+    if (!longPressFired.current) {
+      sensor.status === "running" ? sensor.pause() : sensor.start();
+    }
+  };
+
   if (finished) {
     return (
       <main className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-10 px-8 text-center">
@@ -128,8 +163,8 @@ function SessionPage() {
           </div>
         </div>
 
-        <div className="flex flex-col items-center gap-2">
-          <span className="text-lg text-muted-foreground">
+        <div className="flex flex-col items-center gap-2 w-full">
+          <span className="w-full text-lg text-muted-foreground">
             Dalej: seria {setIndex + 2} z {day.sets.length} · {nextTarget} pompek
           </span>
           <span className="text-base text-muted-foreground/60">
@@ -144,20 +179,25 @@ function SessionPage() {
 
   return (
     <main
-      className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-10"
-      onClick={() => (sensor.status === "running" ? sensor.pause() : sensor.start())}
+      className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-10 select-none touch-none"
+      onPointerDown={handlePressStart}
+      onPointerUp={handlePressEnd}
+      onPointerCancel={handlePressEnd}
+      onPointerLeave={handlePressEnd}
     >
+      {holding && (
+        // Czas animacji musi zgadzać się z LONG_PRESS_MS powyżej.
+        <div className="absolute inset-x-0 top-0 h-0.5 bg-destructive/70 origin-left animate-[hold-fill_600ms_linear_forwards]" />
+      )}
       <RepCounter
         value={inSet}
         caption={`Seria ${setIndex + 1} z ${day.sets.length} · cel ${setTarget}`}
         progress={setTarget ? inSet / setTarget : 0}
         dim={paused}
       />
-      {paused && (
-        <span className="absolute bottom-16 text-lg text-muted-foreground/70">
-          Pauza — dotknij, aby wznowić
-        </span>
-      )}
+      <span className="absolute bottom-16 text-lg text-muted-foreground/70">
+        {paused ? "Pauza — dotknij, aby wznowić" : "Przytrzymaj, aby przerwać"}
+      </span>
     </main>
   );
 }

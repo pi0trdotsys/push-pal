@@ -99,6 +99,15 @@
   }
 }
 
+@keyframes hold-fill {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 @keyframes rep-flash {
   0% {
     transform: scale(1);

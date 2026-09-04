@@ -31,7 +31,7 @@ export function RepCounter({
         />
       </div>
 
-      <span className="text-lg text-muted-foreground">{caption}</span>
+      <span className="w-full text-lg text-muted-foreground">{caption}</span>
     </div>
   );
 }

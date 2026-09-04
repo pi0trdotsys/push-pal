@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  PUSH — warstwa monochromatyczna adaptive icon (Android 13+, ikony w stylu
+  Material You). System używa tylko kształtu (alfa), więc kolor tu jest
+  nieistotny — ważny jest wyłącznie ten sam rysunek co `ic_launcher_foreground`.
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+  <path
+      android:strokeColor="#FFFFFF"
+      android:strokeWidth="5"
+      android:strokeLineCap="round"
+      android:pathData="M54,29 A25,25 0 1 1 53.9,29"
+      android:fillColor="#00000000" />
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M50.5,16 h7 v14 h-7 z" />
+  <path
+      android:fillColor="#FFFFFF"
+      android:pathData="M54,50 m-4,0 a4,4 0 1 1 8,0 a4,4 0 1 1 -8,0" />
+</vector>
