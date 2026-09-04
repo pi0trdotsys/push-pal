@@ -126,7 +126,7 @@ function SessionPage() {
           </span>
           <div className="w-40 h-px bg-foreground/15 overflow-hidden">
             <div
-              className="h-full bg-foreground/40 transition-[width] duration-1000 linear"
+              className="h-full bg-foreground/40 transition-[width] duration-1000 ease-linear"
               style={{ width: `${(rest / REST_SECONDS) * 100}%` }}
             />
           </div>
