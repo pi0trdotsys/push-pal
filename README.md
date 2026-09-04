@@ -1,14 +1,16 @@
-# Welcome to your Lovable project
+# Push Pal
+
+Zaplanuj mi minimalistyczną aplikację do treningu pompek. Ma zaproponować plan treningowy, wspierać OLED theme, być fancy tech minimalism. Działanie ma polegać na automatycznym mierzeniu pompek przy ich robieniu (wykorzystanie czujnika Halla bądź zbliżeniowego). Potrzebuję same makiety w Typescript. Zanim cokolwiek zrobisz, zaproponuj kilka różnych sposobów realizacji/wyglądu
 
 This project was built with [Lovable](https://lovable.dev).
 
 ## Build with Lovable
 
-Open your project in the [Lovable editor](https://lovable.dev) and keep building.
+Continue developing this project in the [Lovable editor](https://lovable.dev/projects/5b7bb3a9-5444-482d-82a0-d5f9f64040c0).
 
 - **Ship faster**: describe what you want to build and Lovable handles the code.
-- **Stay in sync**: connect the project to GitHub and every change made in Lovable is committed straight to your repository.
-- **Full ownership**: this code is yours. Push to your repository and your changes sync back into Lovable, ready for your next prompt.
+- **Stay in sync**: every change made in Lovable is committed straight to this repository.
+- **Full ownership**: this code is yours. Push to `main` on GitHub and your changes sync back into Lovable, ready for your next prompt.
 
 ## Development
 
@@ -20,10 +22,3 @@ cd <repository-name>
 npm i
 npm run dev
 ```
-
-## Built with
-
-- TanStack Start
-- TypeScript
-- React
-- Tailwind CSS
