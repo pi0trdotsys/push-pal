@@ -108,23 +108,60 @@ function SessionPage() {
     );
   }
 
-  const resting = rest !== null;
+  // Ekran przerwy — odliczanie do następnej serii; tap = pomiń przerwę.
+  if (rest !== null) {
+    const nextTarget = day.sets[setIndex + 1] ?? 0;
+    return (
+      <main
+        className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-14 select-none"
+        onClick={() => setRest(0)}
+      >
+        <span className="text-[11px] tracking-[0.35em] uppercase text-muted-foreground">
+          Przerwa
+        </span>
+
+        <div className="flex flex-col items-center gap-8">
+          <span className="text-[38vw] leading-[0.8] font-extrabold tabular-nums tracking-tighter text-muted-foreground">
+            {rest}
+          </span>
+          <div className="w-40 h-px bg-foreground/15 overflow-hidden">
+            <div
+              className="h-full bg-foreground/40 transition-[width] duration-1000 linear"
+              style={{ width: `${(rest / REST_SECONDS) * 100}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="flex flex-col items-center gap-2">
+          <span className="text-[11px] tracking-[0.35em] uppercase text-muted-foreground">
+            Następna: seria {setIndex + 2}/{day.sets.length} · {nextTarget}
+          </span>
+          <span className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground/50">
+            Dotknij, aby kontynuować
+          </span>
+        </div>
+      </main>
+    );
+  }
+
+  const paused = sensor.status !== "running";
 
   return (
     <main
-      className="fixed inset-0 bg-background flex items-center justify-center"
+      className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-10"
       onClick={() => (sensor.status === "running" ? sensor.pause() : sensor.start())}
     >
       <RepCounter
-        value={resting ? rest : inSet}
-        caption={
-          resting
-            ? "Przerwa"
-            : `Seria ${setIndex + 1}/${day.sets.length} · ${setTarget}`
-        }
-        progress={resting ? rest / REST_SECONDS : setTarget ? inSet / setTarget : 0}
-        dim={resting || sensor.status !== "running"}
+        value={inSet}
+        caption={`Seria ${setIndex + 1}/${day.sets.length} · ${setTarget}`}
+        progress={setTarget ? inSet / setTarget : 0}
+        dim={paused}
       />
+      {paused && (
+        <span className="absolute bottom-16 text-[10px] tracking-[0.35em] uppercase text-muted-foreground/60 animate-pulse">
+          Pauza — dotknij, aby wznowić
+        </span>
+      )}
     </main>
   );
 }
