@@ -4,13 +4,13 @@ import { MONTH_TREND, SESSION_HISTORY } from "@/lib/training-plans";
 export const Route = createFileRoute("/archive")({
   head: () => ({
     meta: [
-      { title: "Archive — historia sesji PUSH" },
+      { title: "PUSH — historia treningów" },
       {
         name: "description",
         content:
-          "Historia treningów pompek: liczba powtórzeń, czas trwania, średnie tempo i rekordy z ostatnich 30 dni.",
+          "Historia treningów pompek: liczba powtórzeń, czas trwania i tempo z ostatnich 30 dni.",
       },
-      { property: "og:title", content: "Archive — historia sesji PUSH" },
+      { property: "og:title", content: "PUSH — historia treningów" },
       {
         property: "og:description",
         content: "Powtórzenia, czas i tempo z ostatnich 30 dni treningu pompek.",
@@ -22,64 +22,36 @@ export const Route = createFileRoute("/archive")({
 
 function ArchivePage() {
   const max = Math.max(...MONTH_TREND);
+  const total = SESSION_HISTORY.reduce((a, s) => a + s.reps, 0);
 
   return (
-    <main className="flex-1 px-6 py-8 space-y-12">
-      <section className="animate-enter space-y-4">
-        <div className="flex justify-between items-baseline">
-          <h2 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-            Trend / 30_Days
-          </h2>
-          <span className="font-mono text-[11px] text-accent tabular-nums">
-            {SESSION_HISTORY.reduce((a, s) => a + s.reps, 0)} REPS
-          </span>
-        </div>
-        <div className="h-24 w-full flex items-end gap-[2px] border-b border-border pb-2">
+    <main className="flex-1 px-8 py-12 space-y-12">
+      <section className="space-y-5">
+        <h2 className="text-3xl font-extrabold">Historia</h2>
+        <p className="text-lg text-muted-foreground">
+          {total} pompek w ostatnich 30 dniach
+        </p>
+        <div className="h-28 w-full flex items-end gap-[3px]">
           {MONTH_TREND.map((v, i) => (
             <div
               key={i}
-              className={`flex-1 rounded-t-sm ${v === max ? "bg-accent/80" : "bg-foreground/5"}`}
+              className={`flex-1 rounded-full ${v === max ? "bg-accent/80" : "bg-foreground/10"}`}
               style={{ height: `${v === 0 ? 2 : (v / max) * 100}%` }}
             />
           ))}
         </div>
-        <div className="flex justify-between font-mono text-[9px] text-muted-foreground">
-          <span>-30D</span>
-          <span>-15D</span>
-          <span>TODAY</span>
-        </div>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
-          Session_Log
-        </h2>
-        {SESSION_HISTORY.map((s, i) => (
-          <div
-            key={s.id}
-            className={`animate-enter p-4 border rounded-sm ${
-              s.record ? "border-accent/40 bg-accent/[0.03]" : "border-border"
-            }`}
-            style={{ animationDelay: `${100 + i * 60}ms` }}
-          >
-            <div className="flex justify-between font-mono text-[10px] mb-2">
-              <span className="text-muted-foreground">
-                {s.date} / {s.plan}
-              </span>
-              <span className={s.record ? "text-accent" : ""}>
-                {s.record ? "NEW RECORD" : "LOGGED"}
+      <section className="space-y-4">
+        {SESSION_HISTORY.map((s) => (
+          <div key={s.id} className="flex items-baseline justify-between py-3">
+            <div className="flex flex-col">
+              <span className="text-xl font-semibold">{s.date}</span>
+              <span className="text-base text-muted-foreground">
+                {s.duration} · {s.pace} na powtórzenie
               </span>
             </div>
-            <div className="flex items-baseline justify-between">
-              <span className="text-2xl font-extrabold tracking-tighter tabular-nums">
-                {s.reps}
-                <span className="text-xs font-normal text-muted-foreground ml-1">REPS</span>
-              </span>
-              <div className="flex gap-4 font-mono text-[10px] text-muted-foreground">
-                <span>{s.duration}</span>
-                <span>{s.pace}/REP</span>
-              </div>
-            </div>
+            <span className="text-3xl font-extrabold tabular-nums">{s.reps}</span>
           </div>
         ))}
       </section>

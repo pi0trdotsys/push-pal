@@ -34,28 +34,25 @@ function TodayPage() {
   return (
     <main className="flex-1 flex flex-col justify-between px-8 py-14">
       <header className="space-y-1">
-        <p className="text-[11px] tracking-[0.35em] uppercase text-muted-foreground">
-          Dzień {String(day.day).padStart(2, "0")} / 30 · {weekdayLabel(day.date)}
+        <p className="text-lg text-muted-foreground">
+          Dzień {day.day} z 30 · {weekdayLabel(day.date)}
         </p>
       </header>
 
-      <div className="flex flex-col items-center gap-4">
+      <div className="flex flex-col items-center gap-5 text-center">
         {rest ? (
           <>
-            <span className="text-5xl font-extrabold tracking-tighter text-muted-foreground">
-              wolne
-            </span>
-            <p className="text-[11px] tracking-[0.3em] uppercase text-muted-foreground">
-              Regeneracja
-            </p>
+            <span className="text-6xl font-extrabold text-muted-foreground">Dzień wolny</span>
+            <p className="text-lg text-muted-foreground">Dziś odpoczywasz</p>
           </>
         ) : (
           <>
-            <span className="text-[26vw] leading-[0.8] font-extrabold tabular-nums tracking-tighter">
+            <span className="text-[30vw] leading-[0.85] font-extrabold tabular-nums">
               {total}
             </span>
-            <p className="text-[11px] tracking-[0.3em] uppercase text-muted-foreground">
-              {day.sets.length} serie · {day.sets.join(" / ")} · ~{estMinutes} min
+            <p className="text-xl text-muted-foreground">pompek dziś</p>
+            <p className="text-base text-muted-foreground">
+              {day.sets.length} serie po {day.sets.join(", ")} · około {estMinutes} min
             </p>
           </>
         )}
@@ -65,9 +62,9 @@ function TodayPage() {
         {!rest && (
           <Link
             to="/session"
-            className="block w-full py-5 text-center bg-foreground text-background text-[12px] font-bold tracking-[0.4em] uppercase active:scale-[0.99] transition-transform"
+            className="block w-full py-6 text-center rounded-2xl bg-foreground text-background text-xl font-bold active:scale-[0.99] transition-transform"
           >
-            Start
+            Zacznij
           </Link>
         )}
 

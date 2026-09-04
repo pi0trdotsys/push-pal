@@ -91,16 +91,14 @@ function SessionPage() {
 
   if (finished) {
     return (
-      <main className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-12 px-8">
-        <span className="text-[30vw] leading-[0.8] font-extrabold tabular-nums tracking-tighter">
-          {done}
-        </span>
-        <p className="text-[11px] tracking-[0.35em] uppercase text-muted-foreground">
-          {Math.floor(elapsed / 60)} min {elapsed % 60}s · cel {target}
+      <main className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-10 px-8 text-center">
+        <span className="text-[32vw] leading-[0.85] font-extrabold tabular-nums">{done}</span>
+        <p className="text-xl text-muted-foreground">
+          Gotowe · {Math.floor(elapsed / 60)} min {elapsed % 60} s
         </p>
         <button
           onClick={finish}
-          className="w-full max-w-xs py-5 bg-foreground text-background text-[12px] font-bold tracking-[0.4em] uppercase"
+          className="w-full max-w-xs py-6 rounded-2xl bg-foreground text-background text-xl font-bold"
         >
           Zakończ
         </button>
@@ -113,30 +111,28 @@ function SessionPage() {
     const nextTarget = day.sets[setIndex + 1] ?? 0;
     return (
       <main
-        className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-14 select-none"
+        className="fixed inset-0 bg-background flex flex-col items-center justify-center gap-12 select-none text-center px-8"
         onClick={() => setRest(0)}
       >
-        <span className="text-[11px] tracking-[0.35em] uppercase text-muted-foreground">
-          Przerwa
-        </span>
+        <span className="text-2xl text-muted-foreground">Przerwa</span>
 
-        <div className="flex flex-col items-center gap-8">
-          <span className="text-[38vw] leading-[0.8] font-extrabold tabular-nums tracking-tighter text-muted-foreground">
+        <div className="flex flex-col items-center gap-10">
+          <span className="text-[40vw] leading-[0.85] font-extrabold tabular-nums text-muted-foreground">
             {rest}
           </span>
-          <div className="w-40 h-px bg-foreground/15 overflow-hidden">
+          <div className="w-48 h-1 rounded-full bg-foreground/15 overflow-hidden">
             <div
-              className="h-full bg-foreground/40 transition-[width] duration-1000 ease-linear"
+              className="h-full rounded-full bg-foreground/40 transition-[width] duration-1000 ease-linear"
               style={{ width: `${(rest / REST_SECONDS) * 100}%` }}
             />
           </div>
         </div>
 
         <div className="flex flex-col items-center gap-2">
-          <span className="text-[11px] tracking-[0.35em] uppercase text-muted-foreground">
-            Następna: seria {setIndex + 2}/{day.sets.length} · {nextTarget}
+          <span className="text-lg text-muted-foreground">
+            Dalej: seria {setIndex + 2} z {day.sets.length} · {nextTarget} pompek
           </span>
-          <span className="text-[10px] tracking-[0.3em] uppercase text-muted-foreground/50">
+          <span className="text-base text-muted-foreground/60">
             Dotknij, aby kontynuować
           </span>
         </div>
@@ -153,12 +149,12 @@ function SessionPage() {
     >
       <RepCounter
         value={inSet}
-        caption={`Seria ${setIndex + 1}/${day.sets.length} · ${setTarget}`}
+        caption={`Seria ${setIndex + 1} z ${day.sets.length} · cel ${setTarget}`}
         progress={setTarget ? inSet / setTarget : 0}
         dim={paused}
       />
       {paused && (
-        <span className="absolute bottom-16 text-[10px] tracking-[0.35em] uppercase text-muted-foreground/60 animate-pulse">
+        <span className="absolute bottom-16 text-lg text-muted-foreground/70">
           Pauza — dotknij, aby wznowić
         </span>
       )}
