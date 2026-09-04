@@ -51,7 +51,7 @@ function TodayPage() {
               {total}
             </span>
             <p className="text-xl text-muted-foreground">pompek dziś</p>
-            <p className="text-base text-muted-foreground">
+            <p className="w-full text-base text-muted-foreground">
               {day.sets.length} serie po {day.sets.join(", ")} · około {estMinutes} min
             </p>
           </>

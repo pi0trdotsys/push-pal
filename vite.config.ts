@@ -13,3 +13,8 @@ export default defineConfig({
     server: { entry: "server" },
   },
 });
+
+// Uwaga: build dla Androida (Capacitor) NIE używa tego configu — ta apka jest
+// SSR/Cloudflare (nitro). Osobny, statyczny pipeline SPA dla powłoki mobilnej
+// żyje w `vite.mobile.config.ts` / `mobile/index.html` / `src/mobile-main.tsx`,
+// patrz komentarz tam i skrypt `build:mobile` w package.json.

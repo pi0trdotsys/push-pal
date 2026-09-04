@@ -44,6 +44,10 @@ export function AiPanel() {
             Endpoint
           </span>
           <input
+            type="text"
+            name="ai-endpoint"
+            autoComplete="off"
+            spellCheck={false}
             value={config.endpoint}
             onChange={(e) => setConfig({ ...config, endpoint: e.target.value })}
             className="w-full bg-transparent border-b border-border py-2 font-mono text-sm outline-none focus:border-foreground"
@@ -55,6 +59,10 @@ export function AiPanel() {
             Model
           </span>
           <input
+            type="text"
+            name="ai-model"
+            autoComplete="off"
+            spellCheck={false}
             value={config.model}
             onChange={(e) => setConfig({ ...config, model: e.target.value })}
             className="w-full bg-transparent border-b border-border py-2 font-mono text-sm outline-none focus:border-foreground"

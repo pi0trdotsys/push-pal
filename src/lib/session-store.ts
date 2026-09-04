@@ -1,13 +1,16 @@
 /**
- * PUSH — globalny stan makiety (plan, ustawienia czujnika, historia).
+ * PUSH — globalny stan aplikacji (plan, ustawienia czujnika, historia).
  *
- * Świadomie w pamięci: dane znikają po odświeżeniu. Punkt wpięcia trwałego
- * zapisu (localStorage / Lovable Cloud) opisuje `docs/IMPLEMENTATION.md`.
+ * Trwały zapis: cały stan poza `today` jest lustrzany do `localStorage`
+ * (klucz `push-pal:state:v1`) po każdej zmianie. `today` liczy się świeżo
+ * przy każdym starcie, żeby aplikacja otwarta następnego dnia pokazywała
+ * właściwy dzień planu zamiast wczorajszej daty z zapisu.
  *
  * Store jest inicjalizowany leniwie przy pierwszym odczycie — nie wolno
- * wywoływać `new Date()` w zakresie modułu (runtime Workers).
+ * wywoływać `new Date()` w zakresie modułu (runtime Workers/SSR).
  */
 import { useSyncExternalStore } from "react";
+import type { SensorKind } from "@/hooks/use-rep-sensor";
 import {
   DEFAULT_VARIANT,
   DEFAULT_VOLUME,
@@ -16,6 +19,32 @@ import {
   generatePlan,
   toIso,
 } from "./plan-30";
+
+const STORAGE_KEY = "push-pal:state:v1";
+
+/** Kształt zapisywany w `localStorage` — bez `today`, patrz komentarz modułu. */
+type PersistedState = Omit<AppState, "today">;
+
+function loadPersisted(): PersistedState | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PersistedState;
+  } catch {
+    return null;
+  }
+}
+
+function savePersisted(s: AppState) {
+  if (typeof window === "undefined") return;
+  try {
+    const { today: _today, ...persisted } = s;
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(persisted));
+  } catch {
+    // localStorage niedostępny (tryb prywatny, itp.) — działamy tylko w pamięci
+  }
+}
 
 /** Wynik jednego zakończonego dnia treningowego. */
 export type SessionResult = {
@@ -40,8 +69,10 @@ export type AppState = {
   /** Dzienny wolumen w pierwszym tygodniu. */
   volume: number;
   plan: DayPlan[];
-  /** Próg detekcji czujnika zbliżeniowego w mm. */
+  /** Próg detekcji czujnika w mm (skala symulacji, patrz `useRepSensor`). */
   threshold: number;
+  /** Który czujnik telefonu liczy powtórzenia (Hall = domyślny). */
+  sensorKind: SensorKind;
   history: SessionResult[];
 };
 
@@ -50,6 +81,9 @@ const listeners = new Set<() => void>();
 
 function init(): AppState {
   const today = toIso(new Date());
+  const persisted = loadPersisted();
+  if (persisted) return { sensorKind: "hall", threshold: 8, ...persisted, today };
+
   return {
     startDate: today,
     today,
@@ -57,6 +91,7 @@ function init(): AppState {
     volume: DEFAULT_VOLUME,
     plan: generatePlan(today, DEFAULT_VARIANT, DEFAULT_VOLUME),
     threshold: 8,
+    sensorKind: "hall",
     history: [],
   };
 }
@@ -68,6 +103,7 @@ function getState(): AppState {
 
 function set(patch: Partial<AppState>) {
   state = { ...getState(), ...patch };
+  savePersisted(state);
   listeners.forEach((l) => l());
 }
 
@@ -108,6 +144,11 @@ export function releaseDay(day: number) {
 /** Ustawia próg detekcji czujnika (mm). */
 export function setThreshold(threshold: number) {
   set({ threshold });
+}
+
+/** Przełącza źródło czujnika (Hall / zbliżeniowy). */
+export function setSensorKind(sensorKind: SensorKind) {
+  set({ sensorKind });
 }
 
 /** Zapisuje zakończoną sesję do historii. */
