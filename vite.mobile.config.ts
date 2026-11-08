@@ -2,6 +2,7 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import tailwindcss from "@tailwindcss/vite";
 import tsconfigPaths from "vite-tsconfig-paths";
+import { fileURLToPath } from "node:url";
 
 /**
  * Build statycznego SPA dla powłoki Capacitor/Android — patrz komentarz w
@@ -15,6 +16,9 @@ import tsconfigPaths from "vite-tsconfig-paths";
  */
 export default defineConfig({
   root: "mobile",
+  resolve: {
+    alias: { "/src": fileURLToPath(new URL("./src", import.meta.url)) },
+  },
   plugins: [react(), tailwindcss(), tsconfigPaths({ root: ".." })],
   build: {
     outDir: "../dist-mobile",

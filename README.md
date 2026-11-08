@@ -1,145 +1,131 @@
-# PUSH — Push Pal
+# PUSH — osobisty plan treningowy
 
-Minimalistyczna aplikacja do treningu pompek. Jeden ekran, jedna wielka liczba,
-zero rozpraszaczy — powtórzenia liczy **prawdziwy czujnik telefonu** (Halla
-albo zbliżeniowy), nie stoper i nie zgadywanie.
+Aplikacja React + TypeScript, dostępna jako web oraz Android (Capacitor).
+Treningi działają offline; konto i model AI nie są wymagane.
 
-Estetyka: pełna czerń OLED, jeden zielony akcent, ostre kąty, `future tech
-minimal`.
+## Codzienny rytm
 
-<table>
-  <tr>
-    <td><img src="docs/screenshots/dzis.png" width="260" alt="Ekran Dziś — cel dnia i przycisk start"></td>
-    <td><img src="docs/screenshots/sesja.png" width="260" alt="Tryb ćwiczenia — pełnoekranowy licznik"></td>
-    <td><img src="docs/screenshots/plan.png" width="260" alt="Ekran Plan — 30 dni i kalibracja czujnika"></td>
-  </tr>
-  <tr>
-    <td align="center"><sub>Dziś</sub></td>
-    <td align="center"><sub>Trening</sub></td>
-    <td align="center"><sub>Plan</sub></td>
-  </tr>
-</table>
+- Pompki co drugi dzień: 5 serii dopasowanych do zadeklarowanych możliwości.
+- Pomiędzy pompkami hantle: barki, biceps i triceps, po 2 serie.
+- Domyślnie 10 powtórzeń w serii z hantlami, regulowane w zakresie 6–15.
+- Rozgrzewka 2 min, kontrolowane powtórzenia, przerwy dopasowane do budżetu
+  około 15 min, wyciszenie 1 min. To szacunek czasu, a nie limit sesji.
+- Dzień wolny można ustawić ręcznie w Planie; brak kar i nadrabiania zaległości.
+- W weekend opcjonalny orbitrek, bieganie, wędrówka lub rower z zapisem czasu.
 
-## Jak to liczy pompki
+## Sesja i dane
 
-Zamiast kamery czy akcelerometru, licznik korzysta z czujników, które telefon
-już ma wbudowane:
+Każde ćwiczenie ma własny schemat animowany SVG, pozycję Start/Koniec,
+instrukcję krok po kroku, liczbę powtórzeń oraz link do pełnej demonstracji.
+Animacje i opisy są zapisane w aplikacji i działają offline; zewnętrzne
+materiały wymagają internetu. Uwzględniamy preferencję ograniczenia animacji.
 
-- **Hall** (domyślny) — magnetometr telefonu (`Sensor.TYPE_MAGNETIC_FIELD`),
-  czyli fizycznie tablica czujników Halla. Magnes w opasce na nadgarstku albo
-  przyklejony do podłogi, przechodzący blisko telefonu w dolnej fazie pompki,
-  zaburza pole magnetyczne — to klasyczna, sprzętowa metoda liczenia pompek
-  czujnikiem Halla.
-- **Zbliżeniowy** — sprzętowy czujnik zbliżeniowy (`Sensor.TYPE_PROXIMITY`),
-  na wielu telefonach też fizycznie zbudowany na efekcie Halla/magnetycznym.
-  Liczy z odległości ręki/klatki piersiowej od telefonu, bez magnesu.
+W trybie ręcznym wpisujesz lub korygujesz wykonane powtórzenia i ciężar
+jednego hantla. W prostowaniu ramion oburącz używasz jednego hantla.
+Automatyczne liczenie pompek jest opcją w Androidzie: czujnik zbliżeniowy
+albo magnetometr z odpowiednim akcesorium magnetycznym. Próg ma skalę
+umowną, nie jest pomiarem milimetrów. Test czujnika uruchamiasz w Planie.
+W przeglądarce nie ma symulacji zaliczającej fikcyjne pompki.
 
-Wybór i czułość ustawia się na ekranie **Plan → Czujnik**. Natywna wtyczka
-Android (`android/.../repsensor/RepSensorPlugin.java`) strumieniuje surowy,
-znormalizowany sygnał do JS w tej samej skali co symulacja webowa — cała
-logika progu, tempa i stabilności (`useRepSensor`) jest więc identyczna
-niezależnie od tego, czy dane pochodzą z prawdziwego czujnika, czy (w
-przeglądarce, bez telefonu) z symulacji zastępczej.
+Postęp zapisujemy przy każdej zmianie i co 5 sekund aktywnej sesji.
+Po wyjściu do tła lub ponownym otwarciu trening jest w pauzie. Awaryjny
+restart odzyskuje czas do ostatniego punktu zapisu. Serie wymagają jawnego
+zatwierdzenia. Wcześniejsze zakończenie zachowuje częściowy wynik.
+Zapis sesji jest idempotentny po identyfikatorze.
 
-## Ekrany
+Stan `push-pal:state:v2` jest walidowany przez Zod. Import v1 zachowuje historię;
+stary zapis pozostaje dostępny. Historia nie ma limitu 60 sesji. Eksport i import
+JSON są w Planie. Import zastępuje dane dopiero po potwierdzeniu w aplikacji.
+Uszkodzony rekord jest kopiowany pod klucz `push-pal:recovery:<timestamp>`,
+jeżeli zapis jest dostępny. Brak dostępu do pamięci pokazuje ostrzeżenie.
 
-- **Dziś** (`/`) — data, cel dnia, jeden przycisk `Zacznij`, rządek 7 kropek
-  z ostatnim tygodniem.
-- **Trening** (`/session`) — pełny ekran, gigantyczna cyfra licznika, pasek
-  postępu serii, automatyczna przerwa z odliczaniem. Dotknięcie
-  pauzuje/wznawia, przytrzymanie przerywa sesję.
-- **Plan** (`/plan`) — generator 30-dniowego planu (Base / Hypertrophy / Max
-  Effort + wolumen startowy), ręczna edycja pojedynczych dni, kalibracja
-  czujnika.
-- **AI** (`/insights`) — podłączenie lokalnego modelu (np. Ollama pod
-  `localhost:11434`) i analiza ostatniego tygodnia. Kontrakt (`AiAdvisor`) jest
-  gotowy, dziś działa na deterministycznym mocku — patrz
-  [`src/lib/ai-client.ts`](src/lib/ai-client.ts).
+## Postępy
 
-Stan (plan, historia, ustawienia czujnika) jest zapisywany w `localStorage`
-(`src/lib/session-store.ts`) — przeżywa odświeżenie i restart aplikacji.
+Analiza lokalna rozdziela pompki, hantle i aktywności dodatkowe. Pokazuje dane
+z ostatnich 7 dni oraz historię serii. Po trzech porównywalnych sesjach proponuje
+małą zmianę celu, wymagającą akceptacji. Zapisane sesje i ręcznie zmienione dni
+nie są przepisywane. Kolejna propozycja wymaga wyników dla aktualnego celu.
+Nie generujemy obserwacji o tempie ani technice bez danych pomiarowych.
 
-## Architektura
+## Widget Android
 
-Ten sam kod źródłowy obsługuje dwa cele budowania:
+Natywny `TrainingWidgetProvider` obsługuje zmianę rozmiaru w obu kierunkach.
+Na Androidzie 12+ udostępnia zestaw responsywnych układów; starsze wersje
+korzystają z rozmiarów podanych przez launcher. Minimalny obszar: 100 × 80 dp.
+Wyświetla rodzaj treningu, cel, czas, opcję startu/wznowienia i — na dużym
+obszarze — tygodniową sumę. Kliknięcie prowadzi do przygotowania treningu,
+nie uruchamia samodzielnie licznika.
 
-| Cel | Wejście | Build | Wyjście | Do czego |
-|---|---|---|---|---|
-| Web (SSR) | `src/routes/*`, `src/start.ts` | `npm run build` | Cloudflare/nitro | strona synchronizowana z Lovable |
-| Android (Capacitor) | `mobile/index.html` → `src/mobile-main.tsx` | `npm run build:mobile` | `dist-mobile/` (statyczne SPA) | APK |
+Dane są przekazywane do SharedPreferences przez `TrainingWidgetPlugin`.
+Widget odczytuje je także przy zamkniętej aplikacji. Odświeża się po zapisach,
+na żądanie systemu co około 30 min oraz po zmianie daty/czasu/strefy.
+System może opóźnić odświeżenie. Po końcu zapisanego okna widget wylicza
+kolejne dni na podstawie początku rytmu i celów.
 
-Trasy (`src/routes/*.tsx`, TanStack Router) i cała logika (`src/lib`,
-`src/hooks`, `src/components`) są wspólne. Różni się tylko punkt wejścia:
-web renderuje je przez SSR (`@tanstack/react-start`, nitro/Cloudflare),
-Android dostaje czyste, statyczne SPA bez serwera (`vite.mobile.config.ts`),
-które Capacitor pakuje do WebView. Zobacz komentarz w
-[`src/mobile-main.tsx`](src/mobile-main.tsx).
+## Kalendarz telefonu
 
-Czujnik ma tę samą warstwę abstrakcji po obu stronach —
-[`RepSensorSource`](src/hooks/use-rep-sensor.ts): na Androidzie implementuje ją
-natywna wtyczka Capacitor ([`src/lib/native-sensor.ts`](src/lib/native-sensor.ts)
-+ [`RepSensorPlugin.java`](android/app/src/main/java/com/pushpal/app/repsensor/RepSensorPlugin.java)),
-w przeglądarce — symulacja w `useRepSensor`.
+Plan → Kalendarz: wybierz lokalną godzinę treningu.
 
-## Uruchomienie (web)
+- Android: „Dodaj dzisiejszy trening” otwiera systemowy edytor wydarzenia.
+  Użytkownik sprawdza termin, przypomnienie i zapisuje wydarzenie. Aplikacja
+  nie żąda dostępu do odczytu ani zapisu kalendarza.
+- Web: pobranie wydarzenia w formacie `.ics`.
+- Eksport 30 dni `.ics` zawiera daty, rodzaje ćwiczeń, serie, powtórzenia i przerwy;
+  pomija ręcznie ustawione dni wolne. Android otwiera arkusz udostępniania.
+- Opcjonalne przypomnienie 15 min wcześniej jest zapisane w eksporcie ICS.
+  W natywnym edytorze należy sprawdzić jego ustawienie.
+- To eksport, a nie synchronizacja. Późniejsze zmiany planu nie zmieniają
+  istniejących wydarzeń. Godziny ICS są lokalne w kalendarzu importującym.
 
-```sh
-npm i
-npm run dev
+## Uruchomienie i weryfikacja
+
+```powershell
+npm ci
+npm run dev:mobile
+npm test
+npm run typecheck
+npm run lint
+npm run build:mobile
+npm run build
 ```
 
-## Budowanie APK (Android)
+`npm run dev` uruchamia wariant web SSR. Statyczny build mobilny trafia do
+`dist-mobile/`. Do Androida potrzebne są JDK 21 i Android SDK (compileSdk 36):
 
-Wymagania: Android SDK + Java (zmienna `ANDROID_HOME` / `local.properties` w
-`android/`).
-
-```sh
-npm run android:apk
+```powershell
+npm run android
+cd android
+.\gradlew.bat assembleDebug
 ```
 
-To po kolei: buduje statyczne SPA (`build:mobile`), synchronizuje je do
-projektu Android (`cap sync android`) i uruchamia Gradle
-(`assembleDebug`). Gotowy plik ląduje w
-`android/app/build/outputs/apk/debug/app-debug.apk`.
+APK: `android/app/build/outputs/apk/debug/app-debug.apk`.
 
-Żeby tylko zsynchronizować web bez budowania APK (np. przed otwarciem
-projektu w Android Studio): `npm run android`.
+Przed wydaniem na telefon należy sprawdzić: oba czujniki (w tym brak czujnika),
+przejście do tła i ubicie procesu, wznowienie, mały/szeroki/wysoki widget,
+zmianę daty, start z widgetu, edytor kalendarza i import ICS. Testy JavaScript
+nie zastępują tych testów urządzenia.
 
-## Struktura
+## Źródła opisów techniki
 
-```
-src/
-  routes/          trasy (TanStack Router) — dziś, trening, plan, AI
-  components/       RepCounter, DayRow, PlanEditor, AiPanel, BottomNav, MiniStreak
-  hooks/            useRepSensor — wspólna logika progu/tempa, symulacja lub realny czujnik
-  lib/
-    plan-30.ts       model i generator 30-dniowego planu
-    session-store.ts  stan aplikacji (localStorage)
-    ai-client.ts     kontrakt AiAdvisor + mock
-    native-sensor.ts  most JS ↔ wtyczka Capacitor RepSensor
-  mobile-main.tsx   punkt wejścia SPA dla Androida (bez SSR)
-mobile/index.html   statyczny wpis budowany przez vite.mobile.config.ts
-android/             projekt Capacitor/Gradle
-  app/src/main/java/com/pushpal/app/repsensor/RepSensorPlugin.java   natywny czujnik
-```
+Własne opisy i schematy opracowano z odniesieniem do:
 
-## Znane ograniczenia
+- [ACE — Lateral Raise](https://www.acefitness.org/resources/everyone/exercise-library/26/lateral-raise/)
+- [Catalyst Athletics — Hammer Curl](https://www.catalystathletics.com/exercise/841/Hammer-Curl/)
+- [ACE — Triceps Extension](https://www.acefitness.org/resources/everyone/exercise-library/74/triceps-extension/)
+- [ACE — Push-up](https://www.acefitness.org/resources/everyone/exercise-library/41/push-up/)
 
-- Czułość magnetometru (tryb Hall) zależy od siły magnesu i odległości —
-  doestraja się suwakiem "Czułość" w **Plan → Czujnik**, nie ma jednej
-  uniwersalnej wartości.
-- Plan liczy 30 dni od pierwszego uruchomienia; po tym oknie ekran Dziś
-  pokazuje dzień 1 (brak automatycznego odnowienia cyklu).
-- Tylko Android — brak celu iOS (Capacitor by na to pozwolił, ale nie ma tu
-  odpowiednika `RepSensorPlugin` w Swift).
+Schematy są uproszczone; pełne demonstracje są podlinkowane przy ćwiczeniach.
 
----
+## Lovable
 
-<!-- LOVABLE:BEGIN -->
-## Build with Lovable
+Projekt pozostaje zgodny z dotychczasowym podziałem: wspólne trasy i logika,
+web SSR oraz statyczna powłoka Androida. Nie przepisuj opublikowanej historii
+Git projektu połączonego z Lovable (patrz AGENTS.md).
 
-Ten projekt korzysta z [Lovable](https://lovable.dev) do edycji makiet UI —
-zmiany wprowadzone w edytorze Lovable trafiają wprost do tego repozytorium.
-Logika (czujnik, plan, sesja, budowanie na Androida) jest już zaimplementowana
-poza Lovable, w zwykłym kodzie w tym repo.
-<!-- LOVABLE:END -->
+## Weryfikacja na telefonie
+
+Aplikacja została zbudowana, zainstalowana i sprawdzona na Xiaomi z Androidem 16.
+Testy urządzenia przechodzą; naprawiono wykryty w nich błąd dat kalendarza.
+[Szczegółowy raport i zakres testów](docs/testing/android-device-2026-11-08.md).
+Opcjonalne `java.home=` w `android/local.properties` wskazuje JDK dla
+`npm run android:apk`, bez zmieniania globalnych ustawień Javy.

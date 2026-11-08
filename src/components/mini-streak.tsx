@@ -1,7 +1,5 @@
-import { dayVolume, isRestDay, type DayPlan } from "@/lib/plan-30";
+import { dayVolume, isRestDay, weekdayLabel, type DayPlan } from "@/lib/plan-30";
 import type { SessionResult } from "@/lib/session-store";
-
-/** Rząd 7 kropek: ostatni tydzień planu (zrobione / pominięte / wolne). */
 export function MiniStreak({
   plan,
   today,
@@ -11,31 +9,24 @@ export function MiniStreak({
   today: string;
   history: SessionResult[];
 }) {
-  const idx = Math.max(0, plan.findIndex((d) => d.date === today));
-  const start = Math.max(0, idx - 6);
-  const week = plan.slice(start, start + 7);
-  const doneDates = new Set(history.map((h) => h.date));
-
+  const week = plan.filter((d) => d.date >= today).slice(0, 7);
   return (
-    <div className="flex items-center gap-3">
+    <div className="grid grid-cols-7 gap-2">
       {week.map((d) => {
-        const done = doneDates.has(d.date);
-        const rest = isRestDay(d);
-        const future = d.date > today;
+        const done = history.some(
+            (h) => h.date === d.date && h.training === d.training && h.completed,
+          ),
+          rest = isRestDay(d);
         return (
-          <span
-            key={d.day}
-            title={`${d.date} · ${rest ? "wolne" : `${dayVolume(d)} powt.`}`}
-            className={`size-1.5 rounded-full ${
-              done
-                ? "bg-accent"
-                : rest
-                  ? "bg-foreground/15"
-                  : future
-                    ? "bg-foreground/25"
-                    : "bg-foreground/10"
-            }`}
-          />
+          <div className="text-center" key={d.date}>
+            <span className="text-[10px] text-muted-foreground">{weekdayLabel(d.date)}</span>
+            <div
+              title={`${d.date} · ${rest ? "odpoczynek" : dayVolume(d) + (d.training === "dumbbells" ? " powt. z hantlami" : " pompek")}`}
+              className={`rhythm-dot ${done ? "rhythm-done" : rest ? "rhythm-rest" : ""} ${d.date === today ? "rhythm-today" : ""}`}
+            >
+              {done ? "✓" : rest ? "—" : d.training === "dumbbells" ? "H" : "P"}
+            </div>
+          </div>
         );
       })}
     </div>

@@ -1,27 +1,25 @@
 import { Link, useRouterState } from "@tanstack/react-router";
-
+import { House, ChartNoAxesCombined, CalendarDays } from "lucide-react";
 const ITEMS = [
-  { to: "/", label: "Dziś" },
-  { to: "/plan", label: "Plan" },
-  { to: "/insights", label: "AI" },
+  { to: "/", label: "Dziś", Icon: House },
+  { to: "/insights", label: "Postępy", Icon: ChartNoAxesCombined },
+  { to: "/plan", label: "Plan", Icon: CalendarDays },
 ] as const;
-
-/** Dolna nawigacja tekstowa — ukryta w trybie sesji (pełny ekran, bez rozpraszaczy). */
 export function BottomNav() {
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   if (pathname === "/session") return null;
-
   return (
-    <nav className="shrink-0 grid grid-cols-3 items-center py-6 px-4">
-      {ITEMS.map((item) => (
+    <nav aria-label="Nawigacja główna" className="bottom-nav">
+      {ITEMS.map(({ to, label, Icon }) => (
         <Link
-          key={item.to}
-          to={item.to}
-          className="text-center text-base tracking-wide text-muted-foreground transition-colors"
-          activeOptions={{ exact: item.to === "/" }}
-          activeProps={{ className: "text-foreground font-semibold" }}
+          key={to}
+          to={to}
+          className="nav-item"
+          activeOptions={{ exact: to === "/" }}
+          activeProps={{ className: "nav-item nav-active" }}
         >
-          {item.label}
+          <Icon size={21} />
+          <span>{label}</span>
         </Link>
       ))}
     </nav>

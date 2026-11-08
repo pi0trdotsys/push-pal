@@ -1,83 +1,51 @@
-/**
- * PUSH — most do natywnej wtyczki Capacitor `RepSensor`.
- *
- * Implementacja Kotlin (`android/app/.../repsensor/RepSensorPlugin.kt`) słucha
- * Android `Sensor.TYPE_MAGNETIC_FIELD` (Hall) albo `Sensor.TYPE_PROXIMITY`
- * i strumieniuje znormalizowany sygnał w tej samej skali co symulacja
- * (`useRepSensor`), żeby cała logika zliczania powtórzeń (próg, tempo,
- * stabilność) została identyczna na webie i na urządzeniu.
- *
- * Na webie / w podglądzie Lovable `Capacitor.isNativePlatform()` zwraca
- * `false` i nikt tej wtyczki nie woła — `useRepSensor` spada wtedy na
- * wbudowaną symulację.
- */
 import { useMemo } from "react";
-import { registerPlugin, Capacitor } from "@capacitor/core";
+import { Capacitor, registerPlugin } from "@capacitor/core";
 import type { RepSensorSource, SensorKind } from "@/hooks/use-rep-sensor";
-
-type ReadingEvent = { distance: number };
-
-type RepSensorPlugin = {
-  start: (opts: { kind: SensorKind }) => Promise<void>;
-  stop: () => Promise<void>;
-  addListener: (
-    eventName: "reading",
-    listener: (event: ReadingEvent) => void,
-  ) => Promise<{ remove: () => void }> & { remove?: () => void };
+type Plugin = {
+  start(o: { kind: SensorKind }): Promise<void>;
+  stop(): Promise<void>;
+  addListener(
+    name: "reading",
+    fn: (event: { distance: number }) => void,
+  ): Promise<{ remove(): Promise<void> }>;
 };
-
-let plugin: RepSensorPlugin | null = null;
-
-function getPlugin(): RepSensorPlugin | null {
-  if (!Capacitor.isNativePlatform()) return null;
-  if (!plugin) {
-    plugin = registerPlugin<RepSensorPlugin>("RepSensor");
-  }
-  return plugin;
-}
-
-/** Czy w tym środowisku w ogóle warto pytać o realny czujnik (jesteśmy w apce natywnej). */
-export function isNativeSensorAvailable(): boolean {
+const plugin = registerPlugin<Plugin>("RepSensor");
+let lifecycle = Promise.resolve();
+export function isNativeSensorAvailable() {
   return Capacitor.isNativePlatform();
 }
-
-/**
- * Tworzy `RepSensorSource` podpięty do natywnego czujnika telefonu.
- * Zwraca `null` poza platformą natywną (web) — wołający ma wtedy przekazać
- * `source: null` do `useRepSensor`, co włącza symulację.
- */
 export function createNativeRepSensorSource(kind: SensorKind): RepSensorSource | null {
-  const p = getPlugin();
-  if (!p) return null;
-
+  if (!isNativeSensorAvailable()) return null;
   return {
     kind,
-    subscribe(onSample) {
-      let handle: { remove: () => void } | null = null;
+    subscribe(onSample, onError) {
       let cancelled = false;
-
-      p.start({ kind }).catch((err) => console.error("RepSensor.start failed", err));
-      Promise.resolve(p.addListener("reading", (event) => onSample({ distance: event.distance })))
-        .then((h) => {
-          if (cancelled) h.remove();
-          else handle = h;
+      let handle: { remove(): Promise<void> } | null = null;
+      // Serialize setup/teardown so a late start cannot resurrect a stopped sensor.
+      lifecycle = lifecycle
+        .then(async () => {
+          if (cancelled) return;
+          handle = await plugin.addListener("reading", (e) => {
+            if (!cancelled) onSample(e);
+          });
+          if (!cancelled) await plugin.start({ kind });
         })
-        .catch((err) => console.error("RepSensor.addListener failed", err));
-
+        .catch(() => {
+          if (!cancelled)
+            onError("Czujnik jest niedostępny. Wybierz tryb ręczny lub drugi czujnik.");
+        });
       return () => {
         cancelled = true;
-        handle?.remove();
-        p.stop().catch(() => {});
+        lifecycle = lifecycle
+          .then(async () => {
+            await handle?.remove();
+            await plugin.stop();
+          })
+          .catch(() => {});
       };
     },
   };
 }
-
-/**
- * Wersja hookowa: memoizuje `RepSensorSource` po `kind`, żeby `useRepSensor`
- * nie resubskrybowywał czujnika przy każdym renderze. Zwraca `null` na webie.
- */
-export function useNativeRepSensorSource(kind: SensorKind): RepSensorSource | null {
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+export function useNativeRepSensorSource(kind: SensorKind) {
   return useMemo(() => createNativeRepSensorSource(kind), [kind]);
 }

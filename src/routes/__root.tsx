@@ -12,7 +12,8 @@ import { useEffect, type ReactNode } from "react";
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
 import { BottomNav } from "../components/bottom-nav";
-
+import { refreshCalendar, useAppState } from "../lib/session-store";
+import { consumeWidgetLaunch } from "../lib/widget-bridge";
 
 function NotFoundComponent() {
   return (
@@ -36,7 +37,7 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: { error: unknown; reset: () => void }) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
@@ -74,7 +75,7 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   );
 }
 
-export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
+export const Route = createRootRouteWithContext<{ queryClient: QueryClient; mobile?: boolean }>()({
   head: () => ({
     meta: [
       { charSet: "utf-8" },
@@ -110,6 +111,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
 });
 
 function RootShell({ children }: { children: ReactNode }) {
+  const mobile = useRouter().options.context?.mobile;
+  if (mobile) return <>{children}</>;
   return (
     <html lang="pl">
       <head>
@@ -125,11 +128,40 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const router = useRouter();
+  const app = useAppState();
+  useEffect(() => {
+    const launch = () => {
+      void consumeWidgetLaunch().then((session) => {
+        if (session) void router.navigate({ to: "/session" });
+      });
+    };
+    launch();
+    window.addEventListener("push-widget-start", launch);
+    return () => window.removeEventListener("push-widget-start", launch);
+  }, [router]);
+  useEffect(() => {
+    refreshCalendar();
+    const id = window.setInterval(refreshCalendar, 30000);
+    window.addEventListener("focus", refreshCalendar);
+    document.addEventListener("visibilitychange", refreshCalendar);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener("focus", refreshCalendar);
+      document.removeEventListener("visibilitychange", refreshCalendar);
+    };
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
       <div className="min-h-screen bg-black flex justify-center">
-        <div className="w-full max-w-[420px] min-h-screen bg-background text-foreground font-sans flex flex-col">
+        <div className="w-full max-w-[480px] min-h-dvh bg-background text-foreground font-sans flex flex-col">
+          {app.storageError && (
+            <p role="alert" className="notice m-4">
+              Nie udało się odczytać lub zapisać danych. Wyeksportuj kopię w zakładce Plan. Nie
+              zamykaj aplikacji przed zabezpieczeniem wyników.
+            </p>
+          )}
           {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
           <Outlet />
 
@@ -139,4 +171,3 @@ function RootComponent() {
     </QueryClientProvider>
   );
 }
-

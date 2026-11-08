@@ -14,7 +14,7 @@ import { RouterProvider } from "@tanstack/react-router";
 import { getRouter } from "./router";
 import "./styles.css";
 
-const router = getRouter();
+const router = getRouter(true);
 
 const rootEl = document.getElementById("root");
 if (!rootEl) throw new Error("#root element missing in mobile/index.html");

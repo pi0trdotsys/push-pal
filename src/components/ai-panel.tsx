@@ -1,114 +1,104 @@
-import { useState } from "react";
-import {
-  DEFAULT_AI_CONFIG,
-  mockAdvisor,
-  type AiConfig,
-  type AiHint,
-  type AiStatus,
-} from "@/lib/ai-client";
-import { useAppState } from "@/lib/session-store";
-
-/** Panel lokalnego doradcy AI — w makiecie napędzany `mockAdvisor`. */
+import { EXERCISES } from "@/lib/exercises";
+import { ACTIVITY_NAMES } from "./weekend-card";
+import { useAppState, regeneratePlan, regenerateDumbbells } from "@/lib/session-store";
+import { analyze, analyzeDumbbells } from "@/lib/training-analysis";
 export function AiPanel() {
-  const app = useAppState();
-  const [config, setConfig] = useState<AiConfig>(DEFAULT_AI_CONFIG);
-  const [status, setStatus] = useState<AiStatus>("unknown");
-  const [hints, setHints] = useState<AiHint[]>([]);
-  const [busy, setBusy] = useState(false);
-
-  const ping = async () => {
-    setStatus("checking");
-    setStatus(await mockAdvisor.ping(config));
-  };
-
-  const analyze = async () => {
-    setBusy(true);
-    const result = await mockAdvisor.analyze(config, {
-      plan: app.plan,
-      history: app.history,
-      today: app.today,
-    });
-    setHints(result);
-    setBusy(false);
-  };
-
+  const app = useAppState(),
+    data = analyze(app.history, app.today, app.volume),
+    arms = analyzeDumbbells(app.history, app.today, app.dumbbellReps);
   return (
-    <div className="space-y-10">
-      <section className="space-y-4">
-        <h2 className="text-[11px] tracking-[0.3em] uppercase text-muted-foreground">
-          Model lokalny
-        </h2>
-
-        <label className="block space-y-1">
-          <span className="text-[10px] tracking-widest uppercase text-muted-foreground">
-            Endpoint
-          </span>
-          <input
-            type="text"
-            name="ai-endpoint"
-            autoComplete="off"
-            spellCheck={false}
-            value={config.endpoint}
-            onChange={(e) => setConfig({ ...config, endpoint: e.target.value })}
-            className="w-full bg-transparent border-b border-border py-2 font-mono text-sm outline-none focus:border-foreground"
-          />
-        </label>
-
-        <label className="block space-y-1">
-          <span className="text-[10px] tracking-widest uppercase text-muted-foreground">
-            Model
-          </span>
-          <input
-            type="text"
-            name="ai-model"
-            autoComplete="off"
-            spellCheck={false}
-            value={config.model}
-            onChange={(e) => setConfig({ ...config, model: e.target.value })}
-            className="w-full bg-transparent border-b border-border py-2 font-mono text-sm outline-none focus:border-foreground"
-          />
-        </label>
-
-        <div className="flex items-center justify-between pt-2">
-          <button
-            onClick={ping}
-            className="text-[11px] tracking-widest uppercase text-muted-foreground hover:text-foreground"
-          >
-            Sprawdź połączenie
-          </button>
-          <span className="text-[11px] tracking-widest uppercase text-muted-foreground">
-            {status === "unknown"
-              ? "—"
-              : status === "checking"
-                ? "sprawdzam…"
-                : status === "online"
-                  ? "online"
-                  : "offline"}
-          </span>
+    <div className="space-y-6">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="panel">
+          <p className="eyebrow">Pompki / 7 dni</p>
+          <p className="text-4xl font-bold mt-3">
+            {data.week.length}
+            <span className="text-sm text-muted-foreground"> sesji</span>
+          </p>
         </div>
+        <div className="panel">
+          <p className="eyebrow">Liczba pompek</p>
+          <p className="text-4xl font-bold mt-3">{data.total}</p>
+        </div>
+      </div>
+      <section className="panel space-y-4">
+        <p className="eyebrow text-accent">Twój kolejny krok</p>
+        <p>{data.reason}</p>
+        {data.suggested !== null && (
+          <button
+            className="primary-button"
+            onClick={() => regeneratePlan("base", data.suggested!)}
+          >
+            Zastosuj cel {data.suggested} pompek
+          </button>
+        )}
+        <p className="text-xs text-muted-foreground">
+          Analiza działa lokalnie, na podstawie wyników i Twoich ocen. Ręcznie zmienione dni
+          pozostają bez zmian.
+        </p>
       </section>
-
-      <section className="space-y-5">
-        <button
-          onClick={analyze}
-          disabled={busy}
-          className="w-full py-4 border border-foreground/30 text-[11px] tracking-[0.3em] uppercase disabled:opacity-40"
-        >
-          {busy ? "Analizuję…" : "Analizuj ostatnie 7 dni"}
-        </button>
-
-        <ul className="space-y-4">
-          {hints.map((h) => (
-            <li key={h.id} className="flex gap-3">
-              <span
-                className={`mt-2 size-1 rounded-full shrink-0 ${
-                  h.kind === "suggestion" ? "bg-accent" : "bg-foreground/30"
-                }`}
-              />
-              <p className="text-sm leading-relaxed text-foreground/85">{h.text}</p>
-            </li>
-          ))}
-        </ul>
+      <section className="panel space-y-4">
+        <p className="eyebrow text-accent">Hantle / ostatnie 7 dni</p>
+        <p className="text-2xl font-bold">
+          {arms.sessions} sesji · {arms.total} powtórzeń
+        </p>
+        <p className="text-sm">{arms.reason}</p>
+        {arms.suggested !== null && (
+          <button className="primary-button" onClick={() => regenerateDumbbells(arms.suggested!)}>
+            Zastosuj {arms.suggested} powtórzeń w serii
+          </button>
+        )}
+      </section>
+      <section>
+        <h3 className="text-xl font-bold mb-4">Historia treningów</h3>
+        {!app.history.length ? (
+          <p className="text-muted-foreground">Pierwszy trening rozpocznie Twoją historię.</p>
+        ) : (
+          app.history.map((h) => (
+            <article className="panel mb-3" key={h.id}>
+              <div className="flex justify-between gap-3">
+                <span>
+                  {h.date} · {h.training === "dumbbells" ? "Hantle" : "Pompki"}
+                </span>
+                <strong>
+                  {h.reps} / {h.target}
+                </strong>
+              </div>
+              <p className="text-sm text-muted-foreground mt-2">
+                {Math.floor(h.seconds / 60)} min ·{" "}
+                {h.completed ? "Ukończony" : "Zapisany wcześniej"}
+                {h.difficulty
+                  ? ` · ${h.difficulty === "easy" ? "Łatwo" : h.difficulty === "hard" ? "Trudno" : "W sam raz"}`
+                  : ""}
+              </p>
+              {h.sets.length > 0 && (
+                <p className="text-sm mt-2">
+                  Serie:{" "}
+                  {h.sets
+                    .map(
+                      (s) =>
+                        `${EXERCISES[s.exercise].name}: ${s.reps}${s.weight !== null ? ` × ${s.weight} kg` : ""}`,
+                    )
+                    .join(" · ")}
+                </p>
+              )}
+            </article>
+          ))
+        )}
+      </section>
+      <section>
+        <h3 className="text-xl font-bold mb-4">Aktywności dodatkowe</h3>
+        {!app.activities.length ? (
+          <p className="text-sm text-muted-foreground">
+            W weekend możesz zapisać orbitrek, bieg, wędrówkę lub rower.
+          </p>
+        ) : (
+          app.activities.map((a) => (
+            <p key={a.id} className="panel mb-3 text-sm">
+              {a.date} · {ACTIVITY_NAMES[a.kind]} · {a.minutes} min
+            </p>
+          ))
+        )}
       </section>
     </div>
   );

@@ -90,7 +90,12 @@ public class RepSensorPlugin extends Plugin implements SensorEventListener {
         sensorManager.unregisterListener(this);
         magneticBaseline = Float.NaN;
         activeKind = kind;
-        sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME);
+        lastEmitAt = 0L;
+        if (!sensorManager.registerListener(this, sensor, SensorManager.SENSOR_DELAY_GAME)) {
+            activeKind = null;
+            call.reject("Nie udało się uruchomić czujnika.");
+            return;
+        }
         call.resolve();
     }
 
@@ -164,6 +169,12 @@ public class RepSensorPlugin extends Plugin implements SensorEventListener {
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         // brak akcji — dokładność nie wpływa na logikę progu
+    }
+
+    @Override
+    protected void handleOnPause() {
+        if (sensorManager != null) sensorManager.unregisterListener(this);
+        activeKind = null;
     }
 
     @Override
